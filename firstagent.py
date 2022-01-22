@@ -1,0 +1,60 @@
+import gym
+from gym.wrappers.monitoring.video_recorder import VideoRecorder
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+# import torch.nn as nn
+# import torch.optim as optim
+
+
+class Agent:
+    def __init__(self, env, nb_episode, record = False):
+        self.env = env
+        self.nb_episode = nb_episode
+        self.episode_duration = []
+        self.videorecorder = VideoRecorder(env, 'videos/new_video.mp4', enabled=record)
+
+
+    def select_action(self):
+        action = self.env.action_space.sample()
+        return action
+
+    def plot_durations(self):
+        plt.figure(2)
+        plt.clf()
+        durations_t = torch.tensor(self.episode_duration, dtype=torch.float)
+        plt.title('Evaluation')
+        plt.xlabel('Episodes')
+        plt.ylabel('Duration')
+        plt.plot(durations_t.numpy())
+
+        if len(durations_t) >= 100:
+            means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
+            means = torch.cat((torch.zeros(99), means))
+            plt.plot(means.numpy())
+
+        plt.pause(0.001)  # pause a bit so that plots are updated
+
+    def run(self):
+        for i_episode in range(self.nb_episode):
+            observation = self.env.reset()
+            for t in range(100):
+                env.render()
+                self.videorecorder.capture_frame()
+                action = self.select_action()
+                observation, reward, done, info = env.step(action)
+                if done:
+                    self.episode_duration.append(t+1)
+                    self.plot_durations()
+                    break
+        self.videorecorder.close()
+        env.close()
+    
+
+    
+
+if __name__ == '__main__':
+    plt.ion()
+    env = gym.make('CartPole-v1')
+    agent = Agent(env, 10, True)
+    agent.run()

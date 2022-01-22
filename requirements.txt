@@ -1,0 +1,4 @@
+imagio-ffmpeg
+pytorch
+matplotlib.pyplot
+gym
