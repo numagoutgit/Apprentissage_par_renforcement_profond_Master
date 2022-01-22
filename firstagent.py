@@ -1,3 +1,4 @@
+import random
 import gym
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 import matplotlib.pyplot as plt
@@ -6,6 +7,8 @@ import torch
 # import torch.nn as nn
 # import torch.optim as optim
 
+from DQN_cartpole import DQN
+
 
 class Agent:
     def __init__(self, env, nb_episode, record = False):
@@ -13,11 +16,25 @@ class Agent:
         self.nb_episode = nb_episode
         self.episode_duration = []
         self.videorecorder = VideoRecorder(env, 'videos/new_video.mp4', enabled=record)
+        self.policy_net = DQN()
 
+        self.eps = 0.99
+        self.eps_decay = 0.999
 
-    def select_action(self):
-        action = self.env.action_space.sample()
-        return action
+    def process_state(self, state):
+        '''Transform the state array into pytorch tensor'''
+        return torch.from_numpy(state).unsqueeze(0).float()
+
+    def select_action(self, state):
+        sample = random.random()
+        if sample < self.eps:
+            self.eps *= self.eps_decay
+            return torch.tensor([[random.randrange(self.env.action_space.n)]], dtype=torch.long).item()
+        else:
+            self.eps *= self.eps_decay
+            with torch.no_grad():
+                action = self.policy_net(self.process_state(state)).max(1)[1].item()
+                return action
 
     def plot_durations(self):
         plt.figure(2)
@@ -37,12 +54,12 @@ class Agent:
 
     def run(self):
         for i_episode in range(self.nb_episode):
-            observation = self.env.reset()
+            state = self.env.reset()
             for t in range(100):
                 env.render()
                 self.videorecorder.capture_frame()
-                action = self.select_action()
-                observation, reward, done, info = env.step(action)
+                action = self.select_action(state)
+                state, reward, done, info = env.step(action)
                 if done:
                     self.episode_duration.append(t+1)
                     self.plot_durations()
