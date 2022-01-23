@@ -13,3 +13,6 @@ class DQN(nn.Module):
         x = self.ReLU(x)
         x = self.output(x)
         return x
+
+    def save_model(self):
+        torch.save(self.state_dict(), 'cartpole_model')

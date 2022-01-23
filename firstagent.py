@@ -1,6 +1,5 @@
 import random
 import gym
-from gym.wrappers.monitoring.video_recorder import VideoRecorder
 import matplotlib.pyplot as plt
 import numpy as np
 from itertools import count
@@ -13,11 +12,10 @@ from ReplayMemory import Transition, ReplayMemory
 
 
 class Agent:
-    def __init__(self, env, nb_episode, record = False):
+    def __init__(self, env, nb_episode):
         self.env = env
         self.nb_episode = nb_episode
         self.episode_duration = []
-        self.videorecorder = VideoRecorder(env, 'videos/new_video.mp4', enabled=record)
         self.policy_net = DQN()
         self.target_net = DQN()
         self.target_net.load_state_dict(self.policy_net.state_dict())
@@ -96,8 +94,6 @@ class Agent:
         for i_episode in range(self.nb_episode):
             state = self.env.reset()
             for t in count():
-                #self.env.render()
-                #self.videorecorder.capture_frame()
                 action = self.select_action(state)
                 next_state, reward, done, _ = self.env.step(action.item())
                 reward = torch.tensor([reward])
@@ -114,8 +110,8 @@ class Agent:
 
             if i_episode % self.target_update == 0:
                 self.target_net.load_state_dict((self.policy_net.state_dict()))
-
-        self.videorecorder.close()
+                self.policy_net.save_model()
+        self.policy_net.save_model()
         self.env.close()
     
 
@@ -124,5 +120,5 @@ class Agent:
 if __name__ == '__main__':
     plt.ion()
     env = gym.make('CartPole-v1')
-    agent = Agent(env, 2000, False)
+    agent = Agent(env, 2000)
     agent.run()
