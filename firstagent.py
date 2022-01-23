@@ -19,10 +19,10 @@ class Agent:
         self.episode_duration = []
         self.videorecorder = VideoRecorder(env, 'videos/new_video.mp4', enabled=record)
         self.policy_net = DQN()
-        # self.target_net = DQN()
-        # self.target_net.load_state_dict(self.policy_net.state_dict())
-        # self.target_net.eval()
-        # self.target_update = 100
+        self.target_net = DQN()
+        self.target_net.load_state_dict(self.policy_net.state_dict())
+        self.target_net.eval()
+        self.target_update = 10
         self.memory = ReplayMemory(100000)
         self.optimizer = optim.RMSprop(self.policy_net.parameters())
         self.batch_size = 128
@@ -80,7 +80,7 @@ class Agent:
 
         # Calcul de Q(s',a) pour l'etat suivant
         next_state_values = torch.zeros(self.batch_size)
-        next_state_values[non_final_indice] = self.policy_net(non_final_next_states).max(1)[0]
+        next_state_values[non_final_indice] = self.target_net(non_final_next_states).max(1)[0]
 
         # Calcul cible
         cible = ((next_state_values * self.gamma) + reward_batch)
@@ -112,8 +112,8 @@ class Agent:
                     self.plot_durations()
                     break
 
-            # if i_episode % self.target_update == 0:
-            #     self.target_net.load_state_dict((self.policy_net.state_dict()))
+            if i_episode % self.target_update == 0:
+                self.target_net.load_state_dict((self.policy_net.state_dict()))
 
         self.videorecorder.close()
         self.env.close()
