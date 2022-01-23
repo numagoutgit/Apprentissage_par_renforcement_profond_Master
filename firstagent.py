@@ -3,6 +3,7 @@ import gym
 from gym.wrappers.monitoring.video_recorder import VideoRecorder
 import matplotlib.pyplot as plt
 import numpy as np
+from itertools import count
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -18,6 +19,10 @@ class Agent:
         self.episode_duration = []
         self.videorecorder = VideoRecorder(env, 'videos/new_video.mp4', enabled=record)
         self.policy_net = DQN()
+        # self.target_net = DQN()
+        # self.target_net.load_state_dict(self.policy_net.state_dict())
+        # self.target_net.eval()
+        # self.target_update = 100
         self.memory = ReplayMemory(100000)
         self.optimizer = optim.RMSprop(self.policy_net.parameters())
         self.batch_size = 128
@@ -40,7 +45,7 @@ class Agent:
         else:
             self.eps *= self.eps_decay
             with torch.no_grad():
-                action = self.policy_net(self.process_state(state)).max(1)[1]
+                action = self.policy_net(self.process_state(state)).max(1)[1].view(1,1)
                 return action
 
     def plot_durations(self):
@@ -60,6 +65,8 @@ class Agent:
         plt.pause(0.001)  # pause a bit so that plots are updated
 
     def optimize_model(self):
+        if len(self.memory) < self.batch_size:
+            return
         transitions = self.memory.sample(self.batch_size)
         batch = Transition(*zip(*transitions))
         non_final_indice = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), dtype=torch.bool)
@@ -69,14 +76,14 @@ class Agent:
         reward_batch = torch.cat(batch.reward)
 
         # Calcul de Q(s,a) pour l'etat courant
-        state_action_values = self.policy_net(state_batch).gather(1,action_batch)
+        state_action_values = self.policy_net(state_batch).gather(1,action_batch).squeeze()
 
         # Calcul de Q(s',a) pour l'etat suivant
         next_state_values = torch.zeros(self.batch_size)
-        next_state_values[non_final_indice] = self.target_net(non_final_next_states).max(1)[0].detach()
+        next_state_values[non_final_indice] = self.policy_net(non_final_next_states).max(1)[0]
 
         # Calcul cible
-        cible = (next_state_values * self.gamma) + reward_batch
+        cible = ((next_state_values * self.gamma) + reward_batch)
 
         # Calcul coût
         lossFunction = nn.MSELoss()
@@ -88,23 +95,28 @@ class Agent:
     def run(self):
         for i_episode in range(self.nb_episode):
             state = self.env.reset()
-            for t in range(100):
-                #env.render()
+            for t in count():
+                #self.env.render()
                 #self.videorecorder.capture_frame()
                 action = self.select_action(state)
-                next_state, reward, done, _ = env.step(action.item())
+                next_state, reward, done, _ = self.env.step(action.item())
                 reward = torch.tensor([reward])
                 if done:
                     next_state = None
 
                 self.memory.push(self.process_state(state), action, self.process_state(next_state), reward)
                 state = next_state
+                self.optimize_model()
                 if done:
                     self.episode_duration.append(t+1)
                     self.plot_durations()
                     break
+
+            # if i_episode % self.target_update == 0:
+            #     self.target_net.load_state_dict((self.policy_net.state_dict()))
+
         self.videorecorder.close()
-        env.close()
+        self.env.close()
     
 
     
