@@ -112,9 +112,8 @@ class Agent:
                 self.target_net.load_state_dict((self.policy_net.state_dict()))
                 self.policy_net.save_model()
         self.policy_net.save_model()
+        plt.savefig('images/new_fig.png')
         plt.show()
-
-    
 
 if __name__ == '__main__':
     plt.ion()
