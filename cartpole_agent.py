@@ -29,6 +29,8 @@ class Agent:
         self.eps = 0.99
         self.eps_decay = 0.999
 
+        self.max_duration = 0
+
     def process_state(self, state):
         '''Transform the state array into pytorch tensor'''
         if state is None:
@@ -105,13 +107,16 @@ class Agent:
                 self.optimize_model()
                 if done:
                     self.episode_duration.append(t+1)
+                    if t+1 > self.max_duration:
+                        self.policy_net.save_model('cartpole_model_max')
+                        self.max_duration = t+1
                     self.plot_durations()
                     break
 
             if i_episode % self.target_update == 0:
                 self.target_net.load_state_dict((self.policy_net.state_dict()))
-                self.policy_net.save_model()
-        self.policy_net.save_model()
+                self.policy_net.save_model('cartpole_model')
+        self.policy_net.save_model('cartpole_model')
         plt.savefig('images/new_fig.png')
         plt.show()
 

@@ -14,5 +14,5 @@ class DQN(nn.Module):
         x = self.output(x)
         return x
 
-    def save_model(self):
-        torch.save(self.state_dict(), 'cartpole_model')
+    def save_model(self, path):
+        torch.save(self.state_dict(), path)
