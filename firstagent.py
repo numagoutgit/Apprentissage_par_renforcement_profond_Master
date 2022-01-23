@@ -20,7 +20,7 @@ class Agent:
         self.target_net = DQN()
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
-        self.target_update = 10
+        self.target_update = 30
         self.memory = ReplayMemory(100000)
         self.optimizer = optim.RMSprop(self.policy_net.parameters())
         self.batch_size = 128
@@ -50,7 +50,7 @@ class Agent:
         plt.figure(2)
         plt.clf()
         durations_t = torch.tensor(self.episode_duration, dtype=torch.float)
-        plt.title('Evaluation')
+        plt.title('Training ...')
         plt.xlabel('Episodes')
         plt.ylabel('Duration')
         plt.plot(durations_t.numpy())
@@ -112,13 +112,12 @@ class Agent:
                 self.target_net.load_state_dict((self.policy_net.state_dict()))
                 self.policy_net.save_model()
         self.policy_net.save_model()
-        self.env.close()
-    
+        plt.show()
 
     
 
 if __name__ == '__main__':
     plt.ion()
-    env = gym.make('CartPole-v1')
+    env = gym.make('CartPole-v1').unwrapped
     agent = Agent(env, 2000)
     agent.run()
