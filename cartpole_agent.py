@@ -90,7 +90,7 @@ class Agent:
         loss.backward()
         self.optimizer.step()
 
-    def run(self):
+    def train(self):
         for i_episode in range(self.nb_episode):
             state = self.env.reset()
             for t in count():
@@ -119,4 +119,4 @@ if __name__ == '__main__':
     plt.ion()
     env = gym.make('CartPole-v1').unwrapped
     agent = Agent(env, 2000)
-    agent.run()
+    agent.train()
